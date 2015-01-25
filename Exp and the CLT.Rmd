@@ -1,0 +1,47 @@
+---
+title: "An Exploration of the Central Limit Theorem Relating to Sample Mean and Sample 
+Variance of Random Variables from R Language's Pseudorandom Number Generator and its
+Implementation of Exponential Distribution"
+author: "Randall"
+output: pdf_document
+---
+
+```{r global_options, echo = FALSE, message}
+library(knitr)
+opts_chunk$set(cache = TRUE)
+library(dplyr) # loads magrittr and forward pipe operator `%>%` 
+library(xtable) # better knitr table printing
+```
+
+# Theoretical and Sample Mean of the Exponential Distribution
+
+The exponential distribution describes the elapsed time between events 
+in a Poisson process. Poisson processes are characterized by "memorylessness", 
+which means that while the probability of total events having occurred accrues
+over time, the probability of an event occurring within any given time period 
+is not affected by occurrences within other periods of time.
+
+Where $x$ is the elapsed time in units, $\lambda$ is the rate, in events per unit of
+time. The probability density function of the exponential distribution which describes
+the elapsed time between events for $x \ge 0$ is $F(x;\lambda) = \lambda e^{-\lambda x}$
+and its CDF is $F(x;\lambda) = 1-e^{-\lambda x}$.
+
+By definition, $1/\lambda$ corresponds to the expected time between events. For example, 
+if 3600 hits are expected to a website every hour, then it is also expected that the 
+rate will *average* to one hit per second.
+
+>Therefore:  
+>If $\lambda = 0.2 = 1/5$  
+>then $E[X] = 1/\lambda = 5$, the center of the distribution of elapsed times
+
+```{r}
+set.seed(123); lambda <- 0.2; num <- 40
+exp.sample40 <- rexp(n = num, rate = lambda)
+for (i in 1:999) {
+    exp.sample40 <- cbind(exp.sample40,
+                          rexp(n = num, rate = lambda)
+                          )
+}
+
+```
+

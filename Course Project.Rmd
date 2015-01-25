@@ -1,0 +1,206 @@
+---
+title: "Exploration of the Central Limit Theorem Using the R Language Random 
+Number Generator and the Exponential Distribution"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document:
+    keep_md: yes
+---
+
+```{r global_options, echo = FALSE}
+library(knitr)
+opts_chunk$set(cache = TRUE)
+```
+
+## Overview
+
+The Exponential Distribution models the time elapsed between successive "Poisson" 
+events. The two properties of a Poisson process are that events are independent or 
+"memoryless", and that they occur on average at a rate $\lambda$ expressed in 
+occurences per unit of time. 
+
+Intuitively, "memorylessness" means that while the occurrence of an event during a 
+previous time period does not affect the probability of an event in a successive time 
+period, the occurrence or lack thereof does affect the cumulative count of occurrences 
+for both time periods together. Practically, this means that whether or not something 
+occurred last hour says nothing about whether it will occur this hour, but as time 
+passes it is more likely that an event will have occurred at least once.
+
+Mathematically, where $x$ is the amount of elapsed time, and $\lambda$ is the rate 
+parameter, the probability density function has
+
+the PDF for $\{x: x \ge 0\}$: 
+$$F(x;\lambda) = \lambda e^{-\lambda x}$$ 
+
+and CDF for $\{x : x \ge 0\}$:
+$$F(x;\lambda) = 1-e^{-\lambda x}$$
+
+## Theoretical and Sample Mean of Exponential Distribution
+
+By definition, $1/\lambda$ corresponds to the expected time between events. For example, 
+if 3600 hits are expected to a website every hour, then it is also expected that the 
+rate will *average* to one hit per second.
+
+Experimental tests of this definition speak to the quality of the R pseudorandom number 
+generator and implementation of the Exponential distribution more than as a proof of 
+something that *is*, by definition.
+
+> Assertion:  
+>If $\lambda = 0.2 = 1/5$  
+>then $E[X] = 1/\lambda = 5$
+
+```{r save defaults, echo=FALSE}
+saved <- par(no.readonly = TRUE); 
+```
+
+```{r example histograms, message=FALSE}
+library(dplyr) # loads magrittr and forward pipe operator `%>%` 
+library(xtable) # better knitr table printing
+par(mfrow = c(3, 3), oma = c(0, 0, 1, 0))
+set.seed(123); lambda = 0.2;
+for (i in 1:9) {exp.sample40 <- rexp(n = 40, rate = lambda)
+    hist(x = exp.sample40, breaks = seq(from = 0, to = 80, by = 1.5), ylim = c(0, 20), 
+         xlim = c(0, 20), main = NULL, ylab = "Count", xlab = "Elapsed Time (units)")
+    abline(v = mean(exp.sample40), col = "blue")
+    text(x = mean(exp.sample40), y = 10, pos = 4, col = "blue", labels = paste(
+        "mean: ", round(mean(exp.sample40), digits = 2)))
+}
+title(main = "9 Histograms of Elapsed Times (n=40, lambda=0.2)", outer = TRUE)
+```
+```{r restore defaults, echo=FALSE, error=FALSE}
+par(saved)
+```
+
+It is interesting that these seem to center around $5$. However, it is increasingly 
+interesting to note that the sample mean becomes "more" centered around the theoretical
+mean as the size of the sample increases. In other words there is a tendency toward
+agreement with the Central Limit Theorem.
+
+```{r Other Means}
+set.seed(123)
+sample.n <- c(360, 1e3, 3e3, 10e3, 30e3, 100e3, 300e3, 1e6, 3e6, 10e6, 30e6, 100e6)
+sample.mean <- rexp(n = sample.n[1], rate = lambda) %>% mean
+for (i in sample.n[-1]) {
+    sample.mean <- c(sample.mean, rexp(n = i, rate = lambda) %>% mean)
+}
+sample.error = abs(5 - sample.mean)
+df = cbind(sample.n, sample.mean, sample.error)
+```
+```{r results = 'asis', echo = FALSE}
+xtable(df, digits = c(0, 0, 5, 5)) %>% print(include.rownames = FALSE, floating = FALSE, comment = FALSE)
+```
+
+Interesting, now with a different random seed?
+
+```{r new seed}
+set.seed(234); #other repeated calculations not echoed 
+```
+```{r new seed calcs, echo = FALSE}
+sample.mean <- rexp(n = sample.n[1], rate = lambda) %>% mean # Appendix explains `%>%`
+for (i in sample.n[-1]) {
+    sample.mean <- c(sample.mean, rexp(n = i, rate = lambda) %>% mean)
+}
+sample.error = abs(5 - sample.mean)
+df2 = cbind(sample.n, sample.mean, sample.error)
+```
+```{r results = 'asis', echo = FALSE}
+xtable(df2, digits = c(0, 0, 5, 5)) %>% print(include.rownames = FALSE, floating = FALSE, comment = FALSE)
+```
+
+However, this could go on all day without much more insight than that the sample mean
+tends toward the estimated mean, and tends to be even closer when you have more samples.
+
+## A Comparison of Sample Variance and the Theoretical Variance
+
+The mean of a sample of random variables coming from the exponential distribution is 
+itself a random variable. The Central Limit Theorem states that these estimates of the
+true population mean is approximately normally distributed 
+
+does not only claim that a sample mean tends toward the estimated mean, it 
+claims that the mean measured from a random sample is normally distributed. While the 
+sample mean is expected to be unbiased, it is also expected to be distributed around 
+the theoretical mean in a predictable pattern.
+
+The theoretical *variance* of the *estimate of the actual mean* or *sample mean* 
+is predicted by the size of the sample. 
+
+## Variance of the Exponential Distribution
+
+The theoretical variance of the Exponential Distribution is given by, 
+$Var[X] = (\frac{1}{\lambda})^2$. Therefore, if $\lambda = 0.2$, then the theoretical 
+$Var[X] = 25$
+
+Variance is the squared difference between outcomes and the mean. One way of expressing 
+this is $\sum{\frac{(\mu - x)^2}{n}}$, however in practice the actual population mean 
+is unknown, so the sample mean has to be used instead: 
+$\sum{\frac{(\overline{x} - x)^2}{n}}$
+
+Exploring this with the previous simulations:
+
+```{r}
+set.seed(123)
+i <- 10
+var_a <- sum((5-rexp(n = i, rate = lambda))**2)/i
+var_b <- sum((4.99986-rexp(n = i, rate = lambda))**2)/i
+```
+
+
+
+
+
+
+
+# Appendix A - Environment
+
+```{r environment report}
+sessionInfo()
+```
+
+
+# Appendix B - Other Libraries and Source Code
+
+## `dplyr` and `magrittr`
+
+Dplyr is a very convenient package for data manipulation. While the manipulation is 
+not necessary for this project, Loading the `dplyr` package also loads the `magrittr` 
+package. `Magrittr` allows the forward-pipe operator `%>%` (control+shift+m in 
+RStudio). Just like the `|>` forward-pipe in other languages, including *F#*, 
+*OCaml*, *Julia*, and *Elixir* this is an infix operator for composing functions. While
+that may sound complicated, it makes code easier to read.
+
+As an example compare the following coding conventions with and without forward pipes 
+for function composition:
+
+```{r results='asis'}
+# Combine columns into a data frame. Using 3 decimals of precision build an xtable. 
+# Print the xtable object without floating the figure, or printing superfluous comments.
+cbind(1:5, 6:10, 11:15, 16:20, 21:25, 26:30, 31:35, 36:40, 41:45) %>% 
+    as.data.frame %>% 
+    xtable(digits = 3) %>%
+    print(floating = FALSE, comment = FALSE)
+
+# Print an xtable object that is composed of a data.frame coming from combined 
+# columns, *and* use 3 digits when creating the xtable numbers, *and* when printing 
+# don't let the figure float or print superfluous comments.
+print(xtable(as.data.frame(cbind(
+    1:5, 6:10, 11:15, 16:20, 21:25, 26:30, 31:35, 36:40, 41:45)),
+    digits = 3),
+    floating = FALSE, comment = FALSE)
+```
+
+## `xtable`
+
+Without `xtable`, `knitr` prints tabular data by using the algorithms for spacing text
+using fixed-width type faces in the terminal. `Xtable` takes advantage of proportional 
+width type faces, and computes the required spacing according to the actual space needed.
+
+`Xtable` creates an object that is printed using `print` as shorthand for `print.xtable`.
+See `?print.xtable` for additional notes. Most importantly for pdf output:
+
+>    `{r results='asis'} print.xtable(x = stuff, type = 'latex')`
+
+and for html output:
+
+>    `{r results='asis'} print.xtable(x = stuff, type = 'html')`
+
